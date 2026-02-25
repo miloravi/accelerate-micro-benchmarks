@@ -1,0 +1,7 @@
+packages: .
+
+packages:
+  .
+  ../acc-branches/accelerate
+  ../acc-branches/accelerate-llvm-new-pipeline/accelerate-llvm
+  ../acc-branches/accelerate-llvm-new-pipeline/accelerate-llvm-native
