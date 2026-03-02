@@ -1,6 +1,10 @@
+@ -1,18 +0,0 @@
 {-# LANGUAGE BangPatterns #-}
 
+import Criterion
 import Criterion.Main
+import qualified Accelerate as A
+import qualified Accelerate.LLVM.Native as CPU
 
 -- Simple example function to benchmark
 fib :: Int -> Int
