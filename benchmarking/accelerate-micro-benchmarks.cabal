@@ -21,8 +21,8 @@ executable accelerate-micro-benchmarks
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
 
-    build-depends:    base >= 4.10,
-                      accelerate >= 1.3.0.0,
+    build-depends:    base,
+                      accelerate,
                       accelerate-llvm,
                       accelerate-llvm-native,
                       llvm-pretty,

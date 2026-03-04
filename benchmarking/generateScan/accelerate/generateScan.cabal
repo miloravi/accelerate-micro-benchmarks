@@ -1,0 +1,25 @@
+cabal-version:      2.4
+name:               generateScan
+version:            0.1.0.0
+
+author:             Milo Ligter
+maintainer:         m.ligter@students.uu.nl
+
+
+executable generateScan
+  main-is:          Main.hs
+
+-- Currently have no other modules
+--   other-modules:
+--     GenerateScan
+
+  build-depends:    base ^>=4.17.1.0,
+                    accelerate,
+                    -- accelerate-llvm,
+                    accelerate-llvm-native,
+                    llvm-pretty,
+                    criterion,
+                    bytestring
+  hs-source-dirs:   src
+  default-language: Haskell2010
+  ghc-options: -threaded -Wall

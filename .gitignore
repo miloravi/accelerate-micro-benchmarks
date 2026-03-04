@@ -24,3 +24,6 @@ cabal.project.local~
 /acc-branches
 /benchmarking/builds
 /benchmarking/results
+*.lock
+*.csv
+*.svg

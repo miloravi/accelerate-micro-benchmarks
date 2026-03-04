@@ -4,6 +4,8 @@
 [[ -n "${CFAL_COMMON_SOURCED:-}" ]] && return 0
 CFAL_COMMON_SOURCED=1
 
+echo "Sourcing accelerate_config.sh"
+
 PACKAGES=(
   accelerate-llvm-new-pipeline
   accelerate-llvm-decoupled
@@ -33,7 +35,7 @@ CRITERION_FLAGS=""
 
 # Thread counts to benchmark
 # THREAD_COUNTS=(1 4 8 12 16 20 24 28 32)
-THREAD_COUNTS=(6)
+THREAD_COUNTS=(3 6)
 
 parse_flags() {
     TIMER_FALLBACK=""
@@ -66,30 +68,26 @@ parse_flags() {
     done
 }
 
-# generate a temporary stack.yaml that pins the current
-# accelerate repository and a selected llvm backend branch.
-# the generated file is written to ./temp-stack.yaml and removed
-# after each bench invocation.
 create_temp_stack_yaml() {
-    local pkg="$1"           # branch directory under acc-branches
-    local extra_packages="$2"
-    local extra_deps="$3"
-    local extra_flags="$4"
-
+    local pkg="$1"
+    local path="$2"
+    local extra_packages="$3"
+    local extra_deps="$4"
+    local extra_flags="$5"
+    
     parse_flags "$@"
 
     cat > temp-stack.yaml <<EOF
-# use the same resolver as the repository's own stack.yaml
 snapshot:
-  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/32.yaml
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/25.yaml
 
 $extra_flags
 
 packages:
 - .
-- ../acc-branches/accelerate            # core accelerate library
-- ../acc-branches/$pkg/accelerate-llvm
-- ../acc-branches/$pkg/accelerate-llvm-native
+- ../${path}accelerate
+- ../$path$pkg/accelerate-llvm
+- ../$path$pkg/accelerate-llvm-native
 $extra_packages
 
 extra-deps:
@@ -111,23 +109,23 @@ EOF
 }
 
 bench() {
-    local bench_name="$1"
-    local extra_packages="$2"
-    local extra_deps="$3"
-    local extra_flags="$4"
-    local criterion_flags="$5"
+    local path="$1"
+    local bench_name="$2"
+    local extra_packages="$3"
+    local extra_deps="$4"
+    local extra_flags="$5"
+    local criterion_flags="$6"
 
     parse_flags "$@"
 
     mkdir -p results
 
-    # Plot not yet working
-    # if [ "$REPLOT" = true ]; then
-    #   # Remove old plots
-    #   rm -f results/benchmark_*.svg
-    #   plot_all
-    #   return 0
-    # fi
+    if [ "$REPLOT" = true ]; then
+      # Remove old plots
+      rm -f results/benchmark_*.svg
+      plot_all
+      return 0
+    fi
 
     if [ "$RESUME" = false ]; then
       # Remove old results files
@@ -153,8 +151,8 @@ bench() {
       
       echo "Benching $name"
 
-      # Create temp stack.yaml for this backend variant
-      create_temp_stack_yaml "$pkg" "$extra_packages" "$extra_deps" "$extra_flags" "$@" > temp-stack.yaml
+      # Create temp stack.yaml
+      create_temp_stack_yaml "$pkg" "$path" "$extra_packages" "$extra_deps" "$extra_flags" "$@" > temp-stack.yaml
 
       # Change this to size mayhaps instead of threadss
       for threads in "${THREAD_COUNTS[@]}"; do
@@ -171,14 +169,7 @@ bench() {
 
         # Set thread count and run benchmark, change this cmd to use size or smth
         export ACCELERATE_LLVM_NATIVE_THREADS=$threads
-        # use "stack bench" because our package defines a benchmark stanza,
-    # not an executable. bench_name should be the name of the benchmark
-    # target ("micro-benchmarks").
-    # run all benchmarks in the project using the temporary config
-    # (we don't need to specify a target because there is only one
-    # package in this repository)
-    if STACK_YAML=temp-stack.yaml stack bench \
-            --benchmark-arguments="--csv $temp_result_file $criterion_flags $CRITERION_FLAGS"; then
+        if STACK_YAML=temp-stack.yaml stack run "$bench_name" -- --csv "$temp_result_file" $criterion_flags $CRITERION_FLAGS; then
           mv "$temp_result_file" "$result_file"
         else
           rm -f "$temp_result_file"
@@ -236,93 +227,92 @@ bench() {
     unset ACCELERATE_LLVM_NATIVE_THREADS
 
     # Make pretty plots for all results
-    # plot_all
+    plot_all
 }
 
-# Not yet implemented
-# plot_all() {
-#   echo "Generating plots..."
-#   for csv_file in results/benchmark_*.csv; do
-#     if [ -f "$csv_file" ]; then
-#       plot "$csv_file"
-#     fi
-#   done
-#   echo "Plots saved in results folder"
-# }
+plot_all() {
+  echo "Generating plots..."
+  for csv_file in results/benchmark_*.csv; do
+    if [ -f "$csv_file" ]; then
+      plot "$csv_file"
+    fi
+  done
+  echo "Plots saved in results folder"
+}
 
-# plot() {
-#   local csv_file="$1"
+plot() {
+  local csv_file="$1"
 
-#   # Check if file exists
-#   if [ ! -f "$csv_file" ]; then
-#       echo "Error: File '$csv_file' not found!"
-#       exit 1
-#   fi
+  # Check if file exists
+  if [ ! -f "$csv_file" ]; then
+      echo "Error: File '$csv_file' not found!"
+      exit 1
+  fi
 
-#   basename=$(basename "$csv_file" .csv)
-#   path=$(dirname "$csv_file")
-#   output_file="${path}/${basename}.svg"
+  basename=$(basename "$csv_file" .csv)
+  path=$(dirname "$csv_file")
+  output_file="${path}/${basename}.svg"
 
-#   # Extract title information from filename
-#   title=$(echo "$basename" | sed 's/_/ /g' | sed 's/benchmark //')
+  # Extract title information from filename
+  title=$(echo "$basename" | sed 's/_/ /g' | sed 's/benchmark //')
 
-#   # Create temporary data files for each scheduler
-#   declare -a data_files
-#   declare -a plot_commands
+  # Create temporary data files for each scheduler
+  declare -a data_files
+  declare -a plot_commands
 
-#   for pkg in "${PACKAGES[@]}"; do
-#     name="${PKG_NAMES[$pkg]}"
-#     color="${PKG_COLORS[$pkg]}"
-#     pointtype="${PKG_POINTTYPE[$pkg]}"
+  for pkg in "${PACKAGES[@]}"; do
+    name="${PKG_NAMES[$pkg]}"
+    color="${PKG_COLORS[$pkg]}"
+    pointtype="${PKG_POINTTYPE[$pkg]}"
 
-#     data_file=$(mktemp)
-#     data_files+=("$data_file")
+    data_file=$(mktemp)
+    data_files+=("$data_file")
 
-#     awk -v FPAT='[^,]*|("([^"]|"")*")' -v OFS=',' -v sched="$name" \
-#         'NR>1 && NF>=9 && $8==sched { print $9, $2, $5 }' "$csv_file" > "$data_file"
+    awk -v FPAT='[^,]*|("([^"]|"")*")' -v OFS=',' -v sched="$name" \
+        'NR>1 && NF>=9 && $8==sched { print $9, $2, $5 }' "$csv_file" > "$data_file"
 
-#     plot_commands+=("'$data_file' using 1:2:3 with errorbars linecolor rgb '$color' linewidth 2 pointtype $pointtype pointsize 1.2 title \"$name\"")
-#     plot_commands+=("'$data_file' using 1:2 with linespoints linecolor rgb '$color' linewidth 2 pointtype $pointtype pointsize 1.2 notitle")
+    plot_commands+=("'$data_file' using 1:2:3 with errorbars linecolor rgb '$color' linewidth 2 pointtype $pointtype pointsize 1.2 title \"$name\"")
+    plot_commands+=("'$data_file' using 1:2 with linespoints linecolor rgb '$color' linewidth 2 pointtype $pointtype pointsize 1.2 notitle")
 
-#   done
+  done
 
-#   gnuplot_script=$(mktemp)
+  gnuplot_script=$(mktemp)
 
-#   cat > "$gnuplot_script" << EOF
-#   set terminal svg size 1200,800 enhanced font 'Arial,12'
-#   set output '$output_file'
+  cat > "$gnuplot_script" << EOF
+  set terminal svg size 1200,800 enhanced font 'Arial,12'
+  set output '$output_file'
 
-#   set title "$title Performance Comparison" font 'Arial,14'
-#   set xlabel "Number of Threads"
-#   set ylabel "Mean Execution Time (seconds)"
+  set title "$title Performance Comparison" font 'Arial,14'
+  set xlabel "Number of Threads"
+  set ylabel "Mean Execution Time (seconds)"
 
-#   set grid
-#   set key top right
+  set grid
+  set key top right
 
-#   set lmargin 10
-#   set rmargin 3
-#   set tmargin 3
-#   set bmargin 5
+  set lmargin 10
+  set rmargin 3
+  set tmargin 3
+  set bmargin 5
 
-#   set xrange [${THREAD_COUNTS[0]}:${THREAD_COUNTS[-1]}]
-#   set yrange [0:*]
-#   set xtics ($(IFS=', '; echo "${THREAD_COUNTS[*]}"))
+  set xrange [${THREAD_COUNTS[0]}:${THREAD_COUNTS[-1]}]
+  set yrange [0:*]
+  set xtics ($(IFS=', '; echo "${THREAD_COUNTS[*]}"))
 
-#   set datafile sep ','
-#   # Plot using temporary data files
-#   plot $(IFS=', \\'; echo "${plot_commands[*]}")
+  set datafile sep ','
+  # Plot using temporary data files
+  plot $(IFS=', \\'; echo "${plot_commands[*]}")
 
 
-# EOF
+EOF
 
-#   # Run gnuplot
-#   if command -v gnuplot >/dev/null 2>&1; then
-#       gnuplot "$gnuplot_script"
-#   else
-#       echo "Error: gnuplot not found. Please install gnuplot first."
-#       echo "On Ubuntu/Debian: sudo apt install gnuplot"
-#       exit 1
-#   fi
+  # Run gnuplot
+  if command -v gnuplot >/dev/null 2>&1; then
+      gnuplot "$gnuplot_script"
+  else
+      echo "Error: gnuplot not found. Please install gnuplot first."
+      echo "On Ubuntu/Debian: sudo apt install gnuplot"
+      exit 1
+  fi
 
-#     rm "$gnuplot_script" "${data_files[@]}"
-# }
+    rm "$gnuplot_script" "${data_files[@]}"
+}
