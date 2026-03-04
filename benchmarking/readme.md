@@ -1,4 +1,4 @@
-Setting up the benchmarks:
+Setting up the benchmarks (Not needed when using the .zip file):
 
 From my github (https://github.com/miloravi/accelerate-llvm) clone these branches in this repository as such:
 - acc-branches
