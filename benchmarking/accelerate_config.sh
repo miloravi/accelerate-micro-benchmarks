@@ -34,8 +34,8 @@ declare -A PKG_POINTTYPE=(
 CRITERION_FLAGS=""
 
 # Thread counts to benchmark
-# THREAD_COUNTS=(1 4 8 12 16 20 24 28 32)
-THREAD_COUNTS=(3 6)
+# THREAD_COUNTS=(1 4 8 12 16 20 24 28 32) #  AMD Ryzen Threadripper 2950X (32 threaded)
+THREAD_COUNTS=(1 2 4 6 8 12) # intel i7 10750h (12 threaded)
 
 parse_flags() {
     TIMER_FALLBACK=""

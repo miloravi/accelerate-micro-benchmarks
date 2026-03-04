@@ -27,3 +27,4 @@ cabal.project.local~
 *.lock
 *.csv
 *.svg
+benchmarking/simpleScan/accelerate/temp-stack.yaml
