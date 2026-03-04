@@ -12,6 +12,6 @@ ______________________
 Running the benchmarks:
 Change "THREAD_COUNTS" in accelerate_conf.sh to match your hardware
 
-Run following commands from this (benchmarking) directory:
+Run following commands from the benchmarking directory:
 chmod +x bench_accelerate.sh
 ./bench_accelerate.sh
