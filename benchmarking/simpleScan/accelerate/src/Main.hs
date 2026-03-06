@@ -20,7 +20,7 @@ generateScanAcc _ =
 
 -- Incredibly computationally heavy scan with smaller input size to keep runtime reasonable
 computeBoundScanAcc :: CPU.Acc (A.Array A.DIM1 Float) -> CPU.Acc (A.Vector Float)
-computeBoundScanAcc _ = A.scanl1 heavy (A.generate (A.index1 16777216) (\ix -> A.fromIntegral (A.unindex1 ix) + 1))
+computeBoundScanAcc _ = A.scanl1 heavy (A.generate (A.index1 67108864) (\ix -> A.fromIntegral (A.unindex1 ix) + 1))
     where
         heavy x y =
             let s = x + y
@@ -37,7 +37,7 @@ computeBoundScanAcc _ = A.scanl1 heavy (A.generate (A.index1 16777216) (\ix -> A
 
 -- Imbalanced computational scan by performing redundant work only on even sums
 imbalancedScanAcc :: CPU.Acc (A.Array A.DIM1 Float) -> CPU.Acc (A.Vector Float)
-imbalancedScanAcc _ = A.scanl1 heavy (A.generate (A.index1 33554432) (\ix -> A.fromIntegral (A.unindex1 ix) + 1))
+imbalancedScanAcc _ = A.scanl1 heavy (A.generate (A.index1 67108864) (\ix -> A.fromIntegral (A.unindex1 ix) + 1))
   where 
     heavy x y =
         let s = x + y

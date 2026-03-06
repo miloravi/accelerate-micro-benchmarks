@@ -10,25 +10,29 @@ PACKAGES=(
   accelerate-llvm-new-pipeline
   accelerate-llvm-decoupled
   accelerate-llvm-interleaved
+  accelerate-llvm-interleaved-half-sized
 )
 
 # Name of the accelerate-llvm variant that will be displayed in results
 declare -A PKG_NAMES=(
   [accelerate-llvm-new-pipeline]="Default"
   [accelerate-llvm-decoupled]="Decoupled"
-  [accelerate-llvm-interleaved]="Interleaved"  
+  [accelerate-llvm-interleaved]="Interleaved"
+  [accelerate-llvm-interleaved-half-sized]="Interleaved (half sized)"
 )
 
 declare -A PKG_COLORS=(
   [accelerate-llvm-new-pipeline]="#984ea3"
   [accelerate-llvm-decoupled]="#377eb8"
   [accelerate-llvm-interleaved]="#4daf4a"
+  [accelerate-llvm-interleaved-half-sized]="#ff7f00"
 )
 
 declare -A PKG_POINTTYPE=(
   [accelerate-llvm-new-pipeline]="5"
   [accelerate-llvm-decoupled]="2"
   [accelerate-llvm-interleaved]="4"
+  [accelerate-llvm-interleaved-half-sized]="6"
 )
 
 CRITERION_FLAGS=""
