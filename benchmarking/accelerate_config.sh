@@ -9,8 +9,8 @@ echo "Sourcing accelerate_config.sh"
 PACKAGES=(
   accelerate-llvm-new-pipeline
   accelerate-llvm-decoupled
-  accelerate-llvm-interleaved
-  accelerate-llvm-interleaved-half-sized
+  # accelerate-llvm-interleaved
+  # accelerate-llvm-interleaved-half-sized
 )
 
 # Name of the accelerate-llvm variant that will be displayed in results
@@ -40,6 +40,7 @@ CRITERION_FLAGS=""
 # Thread counts to benchmark
 # THREAD_COUNTS=(1 4 8 12 16 20 24 28 32) #  AMD Ryzen Threadripper 2950X (32 threaded)
 THREAD_COUNTS=(1 2 4 6 8 12) # intel i7 10750h (12 threaded)
+# THREAD_COUNTS=(1 2 4 8 12 16 20 24) # AMD Ryzen 9 4900H (16 threaded)
 
 parse_flags() {
     TIMER_FALLBACK=""
@@ -126,7 +127,7 @@ bench() {
 
     if [ "$REPLOT" = true ]; then
       # Remove old plots
-      rm -f results/benchmark_*.svg
+      rm -f results/benchmark_*.png
       plot_all
       return 0
     fi
@@ -135,7 +136,7 @@ bench() {
       # Remove old results files
       rm -f results/results-*.csv
       rm -f results/benchmark_*.csv
-      rm -f results/benchmark_*.svg
+      rm -f results/benchmark_*.png
     fi
 
     if [ "$RESUME" = true ]; then
@@ -255,7 +256,7 @@ plot() {
 
   basename=$(basename "$csv_file" .csv)
   path=$(dirname "$csv_file")
-  output_file="${path}/${basename}.svg"
+  output_file="${path}/${basename}.png"
 
   # Extract title information from filename
   title=$(echo "$basename" | sed 's/_/ /g' | sed 's/benchmark //')
@@ -275,23 +276,23 @@ plot() {
     awk -v FPAT='[^,]*|("([^"]|"")*")' -v OFS=',' -v sched="$name" \
         'NR>1 && NF>=9 && $8==sched { print $9, $2, $5 }' "$csv_file" > "$data_file"
 
-    plot_commands+=("'$data_file' using 1:2:3 with errorbars linecolor rgb '$color' linewidth 2 pointtype $pointtype pointsize 1.2 title \"$name\"")
-    plot_commands+=("'$data_file' using 1:2 with linespoints linecolor rgb '$color' linewidth 2 pointtype $pointtype pointsize 1.2 notitle")
+    plot_commands+=("'$data_file' using 1:2:3 with errorbars linecolor rgb '$color' linewidth 3.5 pointtype $pointtype pointsize 2.5 title \"$name\"")
+    plot_commands+=("'$data_file' using 1:2 with linespoints linecolor rgb '$color' linewidth 3.5 pointtype $pointtype pointsize 2.5 notitle")
 
   done
 
   gnuplot_script=$(mktemp)
 
   cat > "$gnuplot_script" << EOF
-  set terminal svg size 1200,800 enhanced font 'Arial,12'
+  set terminal png size 1200,800 enhanced font 'Arial,32'
   set output '$output_file'
 
-  set title "$title Performance Comparison" font 'Arial,14'
+  set title "$title (n = 67M)" font 'Arial,32'
   set xlabel "Number of Threads"
-  set ylabel "Mean Execution Time (seconds)"
+  set ylabel "Mean Execution Time (s)"
 
   set grid
-  set key top right
+  set key off
 
   set lmargin 10
   set rmargin 3

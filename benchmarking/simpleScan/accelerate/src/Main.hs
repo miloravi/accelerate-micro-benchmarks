@@ -51,13 +51,13 @@ main = do
     let runComputeBoundScan = CPU.runN computeBoundScanAcc
     let runImbalancedScan = CPU.runN imbalancedScanAcc
     defaultMain -- Empty input is needed to make benchmarks run, as the actual input is generated inside the Accelerate computation
-        [   bgroup "simpleScan" 
+        [   bgroup "Prefix-sum Scan (n = 67M)" 
                 [ bench "scanl1" $ nf runSimple (A.fromList (A.Z A.:. 0) []) ]
-        ,   bgroup "generateScan"
+        ,   bgroup "Generate fused into Scan (n = 67M)"
                 [ bench "generate" $ nf runGenerateScan (A.fromList (A.Z A.:. 0) []) ]
-        ,   bgroup "computeBoundScan"
+        ,   bgroup "Compute-bound scan (n = 67M)"
                 [ bench "computeBound" $ nf runComputeBoundScan (A.fromList (A.Z A.:. 0) []) ]
-        ,   bgroup "imbalancedScan"
+        ,   bgroup "Imbalanced scan (n = 67M)"
                 [ bench "imbalanced" $ nf runImbalancedScan (A.fromList (A.Z A.:. 0) []) ]
         ]
     
